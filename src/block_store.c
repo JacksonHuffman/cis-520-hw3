@@ -1,12 +1,19 @@
 #include <stdio.h>
 #include <stdint.h>
-#include "bitmap.h"
-#include "block_store.h"
+#include "../include/bitmap.h"
+#include "../include/block_store.h"
 // include more if you need
 
 // You might find this handy.  I put it around unused parameters, but you should
 // remove it before you submit. Just allows things to compile initially.
 #define UNUSED(x) (void)(x)
+
+/// Defining the block_store struct
+struct block_store
+{
+    size_t id;
+    bitmap_t *map;
+};
 
 block_store_t *block_store_create()
 {
@@ -15,7 +22,12 @@ block_store_t *block_store_create()
 
 void block_store_destroy(block_store_t *const bs)
 {
-    UNUSED(bs);
+    // First check if bs is not NULL
+    // If so, continue to free fields and eventually the bs pointer
+    if(bs)
+    {
+        free(bs);
+    }
 }
 size_t block_store_allocate(block_store_t *const bs)
 {
