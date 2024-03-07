@@ -41,6 +41,7 @@ block_store_t *block_store_create()
     // Return null
     if(!bs)
     {
+        free(bs); // Free the blockstore pointer if it was incorrectly allocated
         return NULL;
     }
     
@@ -88,48 +89,110 @@ void block_store_destroy(block_store_t *const bs)
         free(bs);
     }
 }
+
+///
+/// Searches for a free block, marks it as in use, and returns the block's id
+/// \param bs BS device
+/// \return Allocated block's id, SIZE_MAX on error
+///
 size_t block_store_allocate(block_store_t *const bs)
 {
-    UNUSED(bs);
-    return 0;
+    //Loop through the block_store
+    for(int i = 0; i < BLOCK_STORE_NUM_BLOCKS; i++)
+    {
+        if(!bitmap_test(bs->map, i * 8)) //If that bit is not being used
+        {
+            bitmap_set(bs->map, i * 8); //Set it to being used
+        }
+         return i; //Return the position
+    }
 }
 
+///
+/// Attempts to allocate the requested block id
+/// \param bs the block store object
+/// \block_id the requested block identifier
+/// \return boolean indicating succes of operation
+///
 bool block_store_request(block_store_t *const bs, const size_t block_id)
 {
-    /*
-    if(bs && block_id <= BLOCK_STORE_NUM_BLOCKS)
+    //If the index is out of bounds, or bs is null
+    if(block_id < BLOCK_STORE_NUM_BLOCKS || bs == NULL)
     {
-
+        return false; //Bad parameter, return false
     }
-    */
-    UNUSED(bs);
-    UNUSED(block_id);
-    return false;
+
+    if(!bitmap_test(bs->map, block_id*8))//If the bit is not being used
+    {
+        block_t block = (block_t)malloc(sizeof(block_t)); //Allocate the block
+
+        //If falsely allocated
+        if(block == NULL)
+        {
+            free(block); //Free the block
+            return false; //Return false
+        }
+        bs->blocks[i] = block; //The block store at the id is now the allocated block
+        bitmap_set(bs->map,block_id*8);//Set the bit to being used
+        return true; //Function successful
+    }
 }
 
-void block_store_release(block_store_t *const bs, const size_t block_id)
-{
-    UNUSED(bs);
-    UNUSED(block_id);
+
+///
+/// Frees the specified block
+/// \param bs BS device
+/// \param block_id The block to free
+///
+void block_store_release(block_store_t *const bs, const size_t block_id) {
+    if (bs != NULL && block_id < BLOCK_STORE_NUM_BLOCKS)
+    {
+        bitmap_reset(bs->map, block_id);
+    }
 }
 
+
+///
+/// Counts the number of blocks marked as in use
+/// \param bs BS device
+/// \return Total blocks in use, SIZE_MAX on error
+///
 size_t block_store_get_used_blocks(const block_store_t *const bs)
 {
     UNUSED(bs);
     return 0;
 }
 
+///
+/// Counts the number of blocks marked free for use
+/// \param bs BS device
+/// \return Total blocks free, SIZE_MAX on error
+///
 size_t block_store_get_free_blocks(const block_store_t *const bs)
 {
     UNUSED(bs);
     return 0;
 }
 
+
+///
+/// Returns the total number of user-addressable blocks
+///  (since this is constant, you don't even need the bs object)
+/// \return Total blocks
+///
 size_t block_store_get_total_blocks()
 {
     return 0;
 }
 
+
+///
+/// Reads data from the specified block and writes it to the designated buffer
+/// \param bs BS device
+/// \param block_id Source block id
+/// \param buffer Data buffer to write to
+/// \return Number of bytes read, 0 on error
+///
 size_t block_store_read(const block_store_t *const bs, const size_t block_id, void *buffer)
 {
     UNUSED(bs);
@@ -138,6 +201,14 @@ size_t block_store_read(const block_store_t *const bs, const size_t block_id, vo
     return 0;
 }
 
+
+///
+/// Reads data from the specified buffer and writes it to the designated block
+/// \param bs BS device
+/// \param block_id Destination block id
+/// \param buffer Data buffer to read from
+/// \return Number of bytes written, 0 on error
+///
 size_t block_store_write(block_store_t *const bs, const size_t block_id, const void *buffer)
 {
     UNUSED(bs);
@@ -146,12 +217,25 @@ size_t block_store_write(block_store_t *const bs, const size_t block_id, const v
     return 0;
 }
 
+
+///
+/// Imports BS device from the given file - for grads/bonus
+/// \param filename The file to load
+/// \return Pointer to new BS device, NULL on error
+///
 block_store_t *block_store_deserialize(const char *const filename)
 {
     UNUSED(filename);
     return NULL;
 }
 
+
+///
+/// Writes the entirety of the BS device to file, overwriting it if it exists - for grads/bonus
+/// \param bs BS device
+/// \param filename The file to write to
+/// \return Number of bytes written, 0 on error
+///
 size_t block_store_serialize(const block_store_t *const bs, const char *const filename)
 {
     UNUSED(bs);
