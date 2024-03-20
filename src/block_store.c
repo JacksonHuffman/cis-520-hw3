@@ -51,7 +51,7 @@ block_store_t *block_store_create()
     // Set bitmap field of bs to an overlay using bitmap_overlay
     bs->map = bitmap_overlay(BITMAP_SIZE_BITS, &(bs->blocks[BITMAP_START_BLOCK]));
 
-    /* This implementation is for when I implement block_store_request
+    //This implementation is for when I implement block_store_request
     for(size_t i = BITMAP_START_BLOCK; i < BITMAP_START_BLOCK + BITMAP_NUM_BLOCKS; i++)
     {
         if(!block_store_request(bs, i))
@@ -61,7 +61,7 @@ block_store_t *block_store_create()
             break;
         }
     }
-    */
+    
 
    // Return pointer to block_store_t pointer
     return bs;
@@ -97,15 +97,21 @@ void block_store_destroy(block_store_t *const bs)
 ///
 size_t block_store_allocate(block_store_t *const bs)
 {
-    //Loop through the block_store
-    for(int i = 0; i < BLOCK_STORE_NUM_BLOCKS; i++)
+    if(!bs)
     {
-        if(!bitmap_test(bs->map, i * 8 - 7)) //Check the first bit to see if the byte is being used
-        {
-            bitmap_set(bs->map, i * 8 - 7); //Set the byte to being in use
-        }
-         return i; //Return the position
+        return SIZE_MAX;
     }
+
+    size_t index = bitmap_ffz(bs->map);
+
+    if(index >= BLOCK_STORE_NUM_BLOCKS)
+    {
+        return SIZE_MAX;
+    }
+
+    bitmap_set(bs->map, index);
+
+    return index;
 }
 
 ///
@@ -116,22 +122,27 @@ size_t block_store_allocate(block_store_t *const bs)
 ///
 bool block_store_request(block_store_t *const bs, const size_t block_id)
 {
+
     //If the index is out of bounds, or bs is null
-    if(block_id < BLOCK_STORE_NUM_BLOCKS || bs == NULL)
+    if(bs == NULL || block_id >= BLOCK_STORE_NUM_BLOCKS)
     {
         return false; //Bad parameter, return false
     }
 
-    if(!bitmap_test(bs->map, block_id*8 - 7))//If the bit is not being used
+    if(bitmap_test(bs->map, block_id))
     {
-        for(int i = 0; i < bs->map->byte_count -1)
-        {
-            bitmap_set((bs->map,block_id + i)*8 - 7);//Set the bit to being used
-            return true; //Function successful
-        }
-        
+        return false;
     }
-    return false;
+
+    bitmap_set(bs->map, block_id);
+
+    if(!(bitmap_test(bs->map, block_id)))
+    {
+        return false;
+    }
+
+
+    return true;
 }
 
 
@@ -141,10 +152,12 @@ bool block_store_request(block_store_t *const bs, const size_t block_id)
 /// \param block_id The block to free
 ///
 void block_store_release(block_store_t *const bs, const size_t block_id) {
-    if (bs != NULL && block_id < BLOCK_STORE_NUM_BLOCKS)
+    if(bs == NULL || block_id >= BLOCK_STORE_NUM_BLOCKS)
     {
-        bitmap_reset(bs->map, block_id);
+        return;
     }
+
+    bitmap_reset(bs->map, block_id);
 }
 
 
