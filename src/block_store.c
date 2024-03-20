@@ -100,9 +100,9 @@ size_t block_store_allocate(block_store_t *const bs)
     //Loop through the block_store
     for(int i = 0; i < BLOCK_STORE_NUM_BLOCKS; i++)
     {
-        if(!bitmap_test(bs->map, i * 8)) //If that bit is not being used
+        if(!bitmap_test(bs->map, i * 8 - 7)) //Check the first bit to see if the byte is being used
         {
-            bitmap_set(bs->map, i * 8); //Set it to being used
+            bitmap_set(bs->map, i * 8 - 7); //Set the byte to being in use
         }
          return i; //Return the position
     }
@@ -122,20 +122,16 @@ bool block_store_request(block_store_t *const bs, const size_t block_id)
         return false; //Bad parameter, return false
     }
 
-    if(!bitmap_test(bs->map, block_id*8))//If the bit is not being used
+    if(!bitmap_test(bs->map, block_id*8 - 7))//If the bit is not being used
     {
-        block_t block = (block_t)malloc(sizeof(block_t)); //Allocate the block
-
-        //If falsely allocated
-        if(block == NULL)
+        for(int i = 0; i < bs->map->byte_count -1)
         {
-            free(block); //Free the block
-            return false; //Return false
+            bitmap_set((bs->map,block_id + i)*8 - 7);//Set the bit to being used
+            return true; //Function successful
         }
-        bs->blocks[i] = block; //The block store at the id is now the allocated block
-        bitmap_set(bs->map,block_id*8);//Set the bit to being used
-        return true; //Function successful
+        
     }
+    return false;
 }
 
 
@@ -182,7 +178,7 @@ size_t block_store_get_free_blocks(const block_store_t *const bs)
 ///
 size_t block_store_get_total_blocks()
 {
-    return 0;
+    return BLOCK_STORE_NUM_BLOCKS;
 }
 
 
