@@ -168,8 +168,14 @@ void block_store_release(block_store_t *const bs, const size_t block_id) {
 ///
 size_t block_store_get_used_blocks(const block_store_t *const bs)
 {
-    UNUSED(bs);
-    return 0;
+    if(bs == NULL || bs->map == NULL)
+    {
+        return SIZE_MAX;
+    }
+
+    return bitmap_total_set(bs->map);
+    //UNUSED(bs);
+    //return 0;
 }
 
 ///
@@ -179,8 +185,12 @@ size_t block_store_get_used_blocks(const block_store_t *const bs)
 ///
 size_t block_store_get_free_blocks(const block_store_t *const bs)
 {
-    UNUSED(bs);
-    return 0;
+    if(bs == NULL || bs->map == NULL)
+    {
+        return SIZE_MAX;
+    }
+
+    return BLOCK_STORE_NUM_BLOCKS - block_store_get_used_blocks(bs);
 }
 
 
@@ -204,10 +214,23 @@ size_t block_store_get_total_blocks()
 ///
 size_t block_store_read(const block_store_t *const bs, const size_t block_id, void *buffer)
 {
-    UNUSED(bs);
-    UNUSED(block_id);
-    UNUSED(buffer);
-    return 0;
+    // Check for NULL params and out of bounds for block_id
+    if(bs == NULL || bs->blocks == NULL || buffer == NULL || block_id >= BLOCK_STORE_NUM_BLOCKS)
+    {
+        return 0;
+    }
+
+    // get offset
+    size_t offset = block_id * BLOCK_SIZE_BYTES;
+
+    // Copy into buffer using memcpy
+    memcpy(buffer, bs->blocks + offset, BLOCK_SIZE_BYTES);
+
+    return ;
+    //UNUSED(bs);
+    //UNUSED(block_id);
+    //UNUSED(buffer);
+    //return 0;
 }
 
 
