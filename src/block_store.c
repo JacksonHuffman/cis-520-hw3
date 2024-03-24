@@ -222,10 +222,10 @@ size_t block_store_read(const block_store_t *const bs, const size_t block_id, vo
 
     size_t total_bytes_read = 0;
 
-    for (size_t block_id = 0; block_id < BLOCK_STORE_NUM_BLOCKS; ++block_id)
+    for (size_t i = 0; i < BLOCK_STORE_NUM_BLOCKS; ++i)
     {
         // Calculate the offset for the current block id
-        size_t offset = block_id * BLOCK_SIZE_BYTES;
+        size_t offset = i * BLOCK_SIZE_BYTES;
 
         // Copy current block's data to the buffer
         memcpy((uint8_t *)buffer + offset, bs->blocks[block_id].Block, BLOCK_SIZE_BYTES);
