@@ -226,11 +226,7 @@ size_t block_store_read(const block_store_t *const bs, const size_t block_id, vo
     // Copy into buffer using memcpy
     memcpy(buffer, bs->blocks + offset, BLOCK_SIZE_BYTES);
 
-    return ;
-    //UNUSED(bs);
-    //UNUSED(block_id);
-    //UNUSED(buffer);
-    //return 0;
+    return BLOCK_SIZE_BYTES;
 }
 
 
@@ -243,10 +239,19 @@ size_t block_store_read(const block_store_t *const bs, const size_t block_id, vo
 ///
 size_t block_store_write(block_store_t *const bs, const size_t block_id, const void *buffer)
 {
-    UNUSED(bs);
-    UNUSED(block_id);
-    UNUSED(buffer);
-    return 0;
+    // Check for NULL params and out of bounds for block_id
+    if(bs == NULL || bs->blocks == NULL || buffer == NULL || block_id >= BLOCK_STORE_NUM_BLOCKS)
+    {
+        return 0;
+    }
+
+    // get offset
+    size_t offset = block_id * BLOCK_SIZE_BYTES;
+
+    // Copy into buffer using memcpy
+    memcpy(bs->blocks + offset, buffer, BLOCK_SIZE_BYTES);
+
+    return BLOCK_SIZE_BYTES;
 }
 
 
