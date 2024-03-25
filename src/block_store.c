@@ -226,7 +226,11 @@ size_t block_store_read(const block_store_t *const bs, const size_t block_id, vo
     // Copy into buffer using memcpy
     memcpy(buffer, bs->blocks + offset, BLOCK_SIZE_BYTES);
 
-    return BLOCK_SIZE_BYTES;
+    return ;
+    //UNUSED(bs);
+    //UNUSED(block_id);
+    //UNUSED(buffer);
+    //return 0;
 }
 
 
