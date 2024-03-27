@@ -205,32 +205,25 @@ size_t block_store_get_total_blocks()
 }
 
 
-///
+
 /// Reads data from the specified block and writes it to the designated buffer
 /// \param bs BS device
 /// \param block_id Source block id
 /// \param buffer Data buffer to write to
 /// \return Number of bytes read, 0 on error
-///
 size_t block_store_read(const block_store_t *const bs, const size_t block_id, void *buffer)
 {
-    // Check for NULL params and out of bounds for block_id
+    // Check for invalid parameters
     if(bs == NULL || bs->blocks == NULL || buffer == NULL || block_id >= BLOCK_STORE_NUM_BLOCKS)
     {
         return 0;
     }
 
-    // get offset
-    size_t offset = block_id * BLOCK_SIZE_BYTES;
+    // Copy the data from the specified block to the buffer
+    memcpy(buffer, bs->blocks[block_id].Block, BLOCK_SIZE_BYTES);
 
-    // Copy into buffer using memcpy
-    memcpy(buffer, bs->blocks + offset, BLOCK_SIZE_BYTES);
-
-    return ;
-    //UNUSED(bs);
-    //UNUSED(block_id);
-    //UNUSED(buffer);
-    //return 0;
+    // Return the total number of bytes read (which is the block size)
+    return BLOCK_SIZE_BYTES;
 }
 
 
@@ -243,17 +236,15 @@ size_t block_store_read(const block_store_t *const bs, const size_t block_id, vo
 ///
 size_t block_store_write(block_store_t *const bs, const size_t block_id, const void *buffer)
 {
-    // Check for NULL params and out of bounds for block_id
+    // Check for invalid parameters
     if(bs == NULL || bs->blocks == NULL || buffer == NULL || block_id >= BLOCK_STORE_NUM_BLOCKS)
     {
-        return 0;
+        return 0; //If invalid, return 0 for error
     }
 
-    // get offset
-    size_t offset = block_id * BLOCK_SIZE_BYTES;
 
     // Copy into buffer using memcpy
-    memcpy(bs->blocks + offset, buffer, BLOCK_SIZE_BYTES);
+    memcpy(bs->blocks[block_id].Block, buffer, BLOCK_SIZE_BYTES);
 
     return BLOCK_SIZE_BYTES;
 }
@@ -279,7 +270,30 @@ block_store_t *block_store_deserialize(const char *const filename)
 ///
 size_t block_store_serialize(const block_store_t *const bs, const char *const filename)
 {
-    UNUSED(bs);
-    UNUSED(filename);
-    return 0;
+    //Check for NULL parameters
+    if (bs == NULL || filename == NULL) {
+        return 0;
+    }
+
+    //Open the file for binary writing because we're using bitmaps
+    FILE *file = fopen(filename, "wb");
+
+    //If not opened properly
+    if (file == NULL)
+    {
+        return 0; // Return 0 bytes
+    }
+
+    // Write the bitmap to the file
+    size_t bytes_written = fwrite(bitmap_export(bs->map), sizeof(uint8_t), BITMAP_SIZE_BYTES, file);
+
+    // Write each block to the file
+    for (size_t i = 0; i < BLOCK_STORE_NUM_BLOCKS; ++i) {
+        bytes_written += fwrite(bs->blocks[i].Block, sizeof(uint8_t), BLOCK_SIZE_BYTES, file);
+    }
+
+    // Close the file
+    fclose(file);
+
+    return bytes_written;
 }
