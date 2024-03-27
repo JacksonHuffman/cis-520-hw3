@@ -251,18 +251,6 @@ size_t block_store_write(block_store_t *const bs, const size_t block_id, const v
 
 
 ///
-/// Imports BS device from the given file - for grads/bonus
-/// \param filename The file to load
-/// \return Pointer to new BS device, NULL on error
-///
-block_store_t *block_store_deserialize(const char *const filename)
-{
-    UNUSED(filename);
-    return NULL;
-}
-
-
-///
 /// Writes the entirety of the BS device to file, overwriting it if it exists - for grads/bonus
 /// \param bs BS device
 /// \param filename The file to write to
@@ -296,4 +284,18 @@ size_t block_store_serialize(const block_store_t *const bs, const char *const fi
     fclose(file);
 
     return bytes_written;
+}
+
+
+//OPTIONAL METHOD
+
+///
+/// Imports BS device from the given file - for grads/bonus
+/// \param filename The file to load
+/// \return Pointer to new BS device, NULL on error
+///
+block_store_t *block_store_deserialize(const char *const filename)
+{
+    UNUSED(filename);
+    return NULL;
 }
