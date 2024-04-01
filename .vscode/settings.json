@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "block_store.h": "c"
+        "*.kv": "kv",
+        "block_store.h": "c",
+        "bitmap.h": "c"
     }
 }

@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include "../include/bitmap.h"
 #include "../include/block_store.h"
 
@@ -57,7 +59,8 @@ block_store_t *block_store_create()
         if(!block_store_request(bs, i))
         {
             //TODO: Handle error & break
-            fprintf(stderr,"*** Could not allocate block %lu for the bitmap ***\n",i);
+            perror("Could not allocate block for the bitmap\n");
+            return NULL;
             break;
         }
     }
@@ -97,20 +100,25 @@ void block_store_destroy(block_store_t *const bs)
 ///
 size_t block_store_allocate(block_store_t *const bs)
 {
+    // Check for NULL params
     if(!bs)
     {
         return SIZE_MAX;
     }
 
+    // Assign the index using bitmap_ffz
     size_t index = bitmap_ffz(bs->map);
 
+    // Error checking
     if(index >= BLOCK_STORE_NUM_BLOCKS)
     {
         return SIZE_MAX;
     }
 
+    // Use bitmap_set to set the bit at the current index
     bitmap_set(bs->map, index);
 
+    // Return that index
     return index;
 }
 
@@ -129,19 +137,23 @@ bool block_store_request(block_store_t *const bs, const size_t block_id)
         return false; //Bad parameter, return false
     }
 
+    // Use bitmap_test in conditional checking if the bit at block_id int the map is set
     if(bitmap_test(bs->map, block_id))
     {
+        // If it already is, return false
         return false;
     }
 
+    // Otherwise, set it using bitmap_set
     bitmap_set(bs->map, block_id);
 
+    // Check that the bit was actually set
     if(!(bitmap_test(bs->map, block_id)))
     {
         return false;
     }
 
-
+    // Here, return true, meaning we correct using bitmap_test
     return true;
 }
 
@@ -151,12 +163,15 @@ bool block_store_request(block_store_t *const bs, const size_t block_id)
 /// \param bs BS device
 /// \param block_id The block to free
 ///
-void block_store_release(block_store_t *const bs, const size_t block_id) {
+void block_store_release(block_store_t *const bs, const size_t block_id) 
+{
+    // Check for NULL params
     if(bs == NULL || block_id >= BLOCK_STORE_NUM_BLOCKS)
     {
         return;
     }
 
+    // Use bitmap_reset to release all the currently used blocks
     bitmap_reset(bs->map, block_id);
 }
 
@@ -168,14 +183,14 @@ void block_store_release(block_store_t *const bs, const size_t block_id) {
 ///
 size_t block_store_get_used_blocks(const block_store_t *const bs)
 {
+    // Check for NULL params
     if(bs == NULL || bs->map == NULL)
     {
         return SIZE_MAX;
     }
 
+    // Use bitmap_total_set to get the number of used blocks, return this
     return bitmap_total_set(bs->map);
-    //UNUSED(bs);
-    //return 0;
 }
 
 ///
@@ -185,11 +200,13 @@ size_t block_store_get_used_blocks(const block_store_t *const bs)
 ///
 size_t block_store_get_free_blocks(const block_store_t *const bs)
 {
+    // Check for NULL params
     if(bs == NULL || bs->map == NULL)
     {
         return SIZE_MAX;
     }
 
+    // Return the difference of total block and the number of used block to get free blocks
     return BLOCK_STORE_NUM_BLOCKS - block_store_get_used_blocks(bs);
 }
 
@@ -201,6 +218,7 @@ size_t block_store_get_free_blocks(const block_store_t *const bs)
 ///
 size_t block_store_get_total_blocks()
 {
+    // Simply return BLOCK_STORE_NUM_BLOCKS
     return BLOCK_STORE_NUM_BLOCKS;
 }
 
@@ -242,10 +260,10 @@ size_t block_store_write(block_store_t *const bs, const size_t block_id, const v
         return 0; //If invalid, return 0 for error
     }
 
-
     // Copy into buffer using memcpy
     memcpy(bs->blocks[block_id].Block, buffer, BLOCK_SIZE_BYTES);
 
+    // return number bytes written
     return BLOCK_SIZE_BYTES;
 }
 
@@ -258,32 +276,45 @@ size_t block_store_write(block_store_t *const bs, const size_t block_id, const v
 ///
 size_t block_store_serialize(const block_store_t *const bs, const char *const filename)
 {
-    //Check for NULL parameters
-    if (bs == NULL || filename == NULL) {
+    // Check for incorrect params
+    if(bs == NULL || filename == NULL)
+    {
         return 0;
     }
 
-    //Open the file for binary writing because we're using bitmaps
-    FILE *file = fopen(filename, "wb");
+    // Open the file for writing return int to file descriptor
+    int fd = open(filename, O_WRONLY);
 
-    //If not opened properly
-    if (file == NULL)
-    {
-        return 0; // Return 0 bytes
+    // Check the return value of descriptor for error checking
+    if (fd == -1) {
+        perror("Error opening file");
+        return 0;
     }
-
-    // Write the bitmap to the file
-    size_t bytes_written = fwrite(bitmap_export(bs->map), sizeof(uint8_t), BITMAP_SIZE_BYTES, file);
 
     // Write each block to the file
+    size_t total_bytes_written = 0;
+
+    // Iterate through writing
     for (size_t i = 0; i < BLOCK_STORE_NUM_BLOCKS; ++i) {
-        bytes_written += fwrite(bs->blocks[i].Block, sizeof(uint8_t), BLOCK_SIZE_BYTES, file);
+        ssize_t bytes_written = write(fd, bs->blocks[i].Block, BLOCK_SIZE_BYTES);
+
+        // Check for return value writing to the file
+        if (bytes_written == -1) {
+            perror("Error writing to file");
+            return 0;
+        }
+
+        // Cumulate the total bytes written
+        total_bytes_written += bytes_written;
     }
 
-    // Close the file
-    fclose(file);
+    // Close the file, and check for error
+    if (close(fd) == -1) {
+        perror("Error closing file");
+        return 0;
+    }
 
-    return bytes_written;
+    return total_bytes_written;
 }
 
 
